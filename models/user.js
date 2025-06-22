@@ -1,13 +1,21 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  githubId: String,
-  email: String,
-  name: String,
-  accessToken: String,
-  commitsUsed: { type: Number, default: 0 },
-  isPaid: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now },
+  githubId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  username: String,
+  avatarUrl: String,
+  credits: {
+    type: Number,
+    default: 100,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-export default mongoose.model("User", userSchema);
+module.exports = mongoose.model("User", userSchema);

@@ -1,7 +1,7 @@
-import express from "express";
-import User from "../models/users.js";
-import CommitLog from "../models/CommitLog.js";
-import axios from "axios";
+const express = require("express");
+const User = require("../models/user.js");
+const CommitLog = require("../models/logs.js");
+const axios = require("axios");
 
 const router = express.Router();
 
@@ -44,4 +44,4 @@ router.post("/generate", async (req, res) => {
   }
 });
 
-export default route;
+module.exports = router;

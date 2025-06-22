@@ -1,6 +1,6 @@
-import express from "express";
-import axios from "axios";
-import User from "../models/user.js";
+const express = require("express");
+const axios = require("axios");
+const User = require("../models/user.js");
 
 const router = express.Router();
 
@@ -37,4 +37,4 @@ router.post("/github", async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
