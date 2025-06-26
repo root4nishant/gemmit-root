@@ -3,6 +3,7 @@ const axios = require("axios");
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+console.log("GEMINI_API_KEY:", GEMINI_API_KEY);
 
 exports.getGeminiCommitMessage = async (diff) => {
   try {

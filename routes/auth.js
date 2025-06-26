@@ -1,40 +1,33 @@
 const express = require("express");
-const axios = require("axios");
-const User = require("../models/user.js");
-
+const passport = require("passport");
 const router = express.Router();
 
-router.post("/github", async (req, res) => {
-  const { code } = req.body;
-  try {
-    const tokenRes = await axios.post(
-      `https://github.com/login/oauth/access_token`,
-      {
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code,
-      },
-      { headers: { Accept: "application/json" } }
-    );
+router.get(
+  "/github",
+  passport.authenticate("github", { scope: ["user:email"] })
+);
 
-    const accessToken = tokenRes.data.access_token;
-    const userRes = await axios.get("https://api.github.com/user", {
-      headers: { Authorization: `token ${accessToken}` },
-    });
-
-    const { id, email, name } = userRes.data;
-    let user = await User.findOne({ githubId: id });
-    if (!user) {
-      user = await User.create({ githubId: id, email, name, accessToken });
-    } else {
-      user.accessToken = accessToken;
-      await user.save();
-    }
-    res.json({ user });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "GitHub login failed" });
+router.get(
+  "/github/callback",
+  passport.authenticate("github", { failureRedirect: "/login" }),
+  (req, res) => {
+    // For CLI: Send user id or JWT to CLI to store for future API calls
+    res.json({ token: req.user._id, credits: req.user.credits });
   }
+);
+
+router.get("/logout", (req, res) => {
+  req.logout();
+  res.json({ message: "Logged out" });
+});
+
+router.get("/me", require("../middleware/auth"), (req, res) => {
+  res.json({
+    username: req.user.username,
+    credits: req.user.credits,
+    email: req.user.email,
+    avatarUrl: req.user.avatarUrl,
+  });
 });
 
 module.exports = router;

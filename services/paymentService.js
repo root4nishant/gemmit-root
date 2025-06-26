@@ -7,7 +7,7 @@ const razorpay = new Razorpay({
 
 exports.createOrder = async (amountInRupees) => {
   const options = {
-    amount: amountInRupees * 100, // Convert to paise
+    amount: amountInRupees * 100, 
     currency: 'INR',
     receipt: `receipt_${Date.now()}`,
   };

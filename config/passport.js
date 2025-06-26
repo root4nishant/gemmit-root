@@ -1,44 +1,29 @@
+const passport = require("passport");
 const GitHubStrategy = require("passport-github2").Strategy;
 const User = require("../models/user");
 
-module.exports = function (passport) {
-  passport.use(
-    new GitHubStrategy(
-      {
-        clientID: process.env.GITHUB_CLIENT_ID,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        callbackURL: process.env.GITHUB_CALLBACK_URL,
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          const existingUser = await User.findOne({ githubId: profile.id });
-          if (existingUser) return done(null, existingUser);
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser((id, done) => User.findById(id, done));
 
-          const newUser = new User({
-            githubId: profile.id,
-            username: profile.username,
-            avatarUrl: profile.photos[0].value,
-          });
-
-          await newUser.save();
-          return done(null, newUser);
-        } catch (err) {
-          return done(err, null);
-        }
+passport.use(
+  new GitHubStrategy(
+    {
+      clientID: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      callbackURL: process.env.GITHUB_CALLBACK_URL,
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      let user = await User.findOne({ githubId: profile.id });
+      if (!user) {
+        user = await User.create({
+          githubId: profile.id,
+          username: profile.username,
+          avatarUrl: profile.photos?.[0]?.value,
+          email: profile.emails?.[0]?.value,
+          credits: 100,
+        });
       }
-    )
-  );
-
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id, done) => {
-    try {
-      const user = await User.findById(id);
-      done(null, user);
-    } catch (err) {
-      done(err, null);
+      return done(null, user);
     }
-  });
-};
+  )
+);

@@ -6,10 +6,14 @@ const cors = require("cors");
 require("dotenv").config();
 require("./config/passport");
 
+const authRoutes = require("./routes/auth");
+const commitRoutes = require("./routes/commit");
+const paymentRoutes = require("./routes/payment");
+
 const app = express();
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
+app.use(cors());
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -20,18 +24,18 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Routes
-app.use("/auth", require("./routes/auth"));
-app.use("/commit", require("./routes/commit"));
-app.use("/payment", require("./routes/payment"));
+app.use("/auth", authRoutes);
+app.use("/api/commit", commitRoutes);
+app.use("/api/payment", paymentRoutes);
 
-// DB & Start
+app.get("/", (req, res) => res.send("Gemmit backend running"));
+
 mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected");
-    app.listen(process.env.PORT, () =>
-      console.log(`Server running on http://localhost:${process.env.PORT}`)
-    );
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
   })
-  .catch((err) => console.error("MongoDB error:", err));
+  .then(() => {
+    app.listen(process.env.PORT || 4000, () => console.log("Server started"));
+  })
+  .catch((err) => console.error("DB connection error:", err));
