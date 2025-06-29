@@ -1,20 +1,24 @@
-import express from "express";
-import User from "../models/users.js";
-import CommitLog from "../models/CommitLog.js";
-import axios from "axios";
+const express = require("express");
+const axios = require("axios");
+const auth = require("../middleware/auth"); // Ensure this exists and works
 
 const router = express.Router();
 
-router.post("/generate", async (req, res) => {
-  const { userId, diff } = req.body;
+// POST /api/commit/generate
+router.post("/generate", auth, async (req, res) => {
+  const { diff, numFiles } = req.body;
+
+  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+
+  const files = numFiles || 1;
+  const cost = files * 2;
+
+  if (req.user.credits < cost) {
+    return res.status(403).json({ error: "Insufficient credits" });
+  }
+
   try {
-    const user = await User.findById(userId);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-    if (!user.isPaid && user.commitsUsed >= 100) {
-      return res.status(403).json({ error: "Commit limit reached" });
-    }
-
+    // Call Gemini API to generate commit message
     const aiRes = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
@@ -33,15 +37,16 @@ router.post("/generate", async (req, res) => {
 
     const message =
       aiRes.data?.candidates?.[0]?.content?.parts?.[0]?.text || "Auto commit";
-    await CommitLog.create({ userId, message, tokensUsed: 0 });
-    user.commitsUsed += 1;
-    await user.save();
 
-    res.json({ message });
+    // Deduct credits and save
+    req.user.credits -= cost;
+    await req.user.save();
+
+    res.json({ message, credits: req.user.credits });
   } catch (err) {
-    console.error(err);
+    console.error("[Gemmit] Commit generation failed:", err.message);
     res.status(500).json({ error: "Commit generation failed" });
   }
 });
 
-export default route;
+module.exports = router;

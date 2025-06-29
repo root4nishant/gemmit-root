@@ -1,2 +1,4 @@
 /node_modules
 /gemmit.sh
+.env.local
+.env
